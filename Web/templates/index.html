@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-RACE">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dự Đoán Điểm Thi</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #3f51b5;
+            /* Indigo */
+            margin-bottom: 25px;
+            font-size: 28px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .input-group input[type="number"] {
+            width: calc(100% - 22px);
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input[type="number"]:focus {
+            border-color: #3f51b5;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(63, 81, 181, 0.2);
+        }
+
+        button {
+            background-color: #3f51b5;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 17px;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: #303f9f;
+            /* Darker Indigo */
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        #predictionResult {
+            margin-top: 25px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        #predictionValue {
+            color: #e91e63;
+            /* Pink */
+            font-size: 28px;
+        }
+
+        .error-message {
+            color: #d32f2f;
+            /* Red */
+            margin-top: 15px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>📊 Dự Đoán Điểm Thi Cuối Kỳ</h1>
+        <form id="scoreForm">
+            <div class="input-group">
+                <label for="c1">Điểm Thành Phần 1 (C1):</label>
+                <input type="number" id="c1" name="c1" step="0.25" min="0" max="10" required>
+            </div>
+            <div class="input-group">
+                <label for="c2">Điểm Thành Phần 2 (C2):</label>
+                <input type="number" id="c2" name="c2" step="0.25" min="0" max="10" required>
+            </div>
+            <div class="input-group">
+                <label for="c3">Điểm Thành Phần 3 (C3):</label>
+                <input type="number" id="c3" name="c3" step="0.25" min="0" max="10" required>
+            </div>
+            <div class="input-group">
+                <label for="c4">Điểm Thành Phần 4 (C4):</label>
+                <input type="number" id="c4" name="c4" step="0.25" min="0" max="10" required>
+            </div>
+            <button type="button" onclick="predictScore()">🚀 Dự Đoán</button>
+        </form>
+        <div id="predictionResult">
+            Điểm thi dự đoán: <span id="predictionValue">---</span>
+        </div>
+        <div id="errorMessage" class="error-message"></div>
+    </div>
+
+    <script>
+        async function predictScore() {
+            const c1 = document.getElementById('c1').value;
+            const c2 = document.getElementById('c2').value;
+            const c3 = document.getElementById('c3').value;
+            const c4 = document.getElementById('c4').value;
+            const predictionValueEl = document.getElementById('predictionValue');
+            const errorMessageEl = document.getElementById('errorMessage');
+
+            predictionValueEl.textContent = '---'; // Reset
+            errorMessageEl.textContent = ''; // Clear previous errors
+
+            if (!c1 || !c2 || !c3 || !c4) {
+                errorMessageEl.textContent = 'Vui lòng nhập đủ 4 đầu điểm.';
+                return;
+            }
+
+            // Kiểm tra giá trị đầu vào có phải là số và nằm trong khoảng 0-10 không
+            const scores = [parseFloat(c1), parseFloat(c2), parseFloat(c3), parseFloat(c4)];
+            for (const score of scores) {
+                if (isNaN(score) || score < 0 || score > 10) {
+                    errorMessageEl.textContent = 'Điểm số phải là số từ 0 đến 10.';
+                    return;
+                }
+            }
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ c1, c2, c3, c4 }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    predictionValueEl.textContent = result.predicted_final_exam.toFixed(2);
+                } else {
+                    errorMessageEl.textContent = result.error || 'Có lỗi xảy ra khi dự đoán.';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                errorMessageEl.textContent = 'Không thể kết nối đến máy chủ dự đoán.';
+            }
+        }
+    </script>
+</body>
+
+</html>
